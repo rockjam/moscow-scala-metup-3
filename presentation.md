@@ -1,7 +1,5 @@
-class: center, middle, inverse
+Typeclass: center, middle, inverse
 # Typeclasses in scala
-
-.footnote[Татаринов Николай]
 
 ---
 class: center, middle, inverse
@@ -131,7 +129,7 @@ layout: true
 # Typeclass encoding take 2
 
 ---
-## Context bounds
+## Context bounds (since scala 2.8.0)
 
 ```scala
   implicit def pairParser[A: Parser, B: Parser] = new Parser[(A, B)] {
@@ -163,7 +161,7 @@ def parsePair[A: Parser, B: Parser](s: String): Option[(A, B)] =
 ```
 
 ---
-## Context bounds is syntactic sugar
+## Context bounds are syntactic sugar
 
 ```scala
 pairParser: [A, B](
@@ -408,12 +406,3 @@ scala> println(buildReport(reportList))
 арбузы: 1500.0
 Total is: 6917.0
 ```
-
-
----
-layout: false
-class: center, middle, inverse
-
-#We are hiring!
-![actor](file:///Users/rockjam/Downloads/Actor_Logo_New.png)
-## Actor
