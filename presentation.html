@@ -120,6 +120,13 @@
 	        float: right;
 	        padding-top: 1em;
 	      }
+		  table {
+		      border-collapse: collapse;
+		  }
+		  th, td {
+		      padding: 5px;
+		      border: 1px solid black;
+		  }
 	    </style>  
   </head>
   <body>
@@ -127,12 +134,21 @@
 class: center, middle, inverse
 # Typeclasses in scala
 
-.footnote[Татаринов Николай]
-
 ---
 class: center, middle, inverse
 # Take 1
 
+---
+# Пример
+
+Нужно написать парсер из строки в определенные нами структуры данных.
+
+Например:
+```scala
+val toParse = "hello,world,42"
+case class Message(first: String, second: String, id: Int)
+val result: Option[Message] = Parser.parse[Message](toParse)
+```
 
 ---
 layout: true
@@ -219,16 +235,31 @@ scala>   parseSeq[BigDecimal](List("1.00002", "2.00010002", "3.00002", "4.0005")
 ---
 
 ##Implicit resolution:
+
+--
+
 ### • explicit
+
+--
+
 ### • local
+
+--
+
 ### • from imports
+
+--
+
 ### • inhertited
+
+--
+
 ### • from package object
 
 ---
 
 style: middle
-## Проблемы
+## Проблемы:
 
 --
 
@@ -250,14 +281,14 @@ style: middle
 layout: false
 class: center, middle, inverse
 # Take 2
-## Убираем костыли
+## Можно лучше
 
 ---
 layout: true
 # Typeclass encoding take 2
 
 ---
-## Context bounds
+## Context bounds (since scala 2.8.0)
 
 ```scala
   implicit def pairParser[A: Parser, B: Parser] = new Parser[(A, B)] {
@@ -289,7 +320,7 @@ def parsePair[A: Parser, B: Parser](s: String): Option[(A, B)] =
 ```
 
 ---
-## Context bounds is syntactic sugar
+## Context bounds are syntactic sugar
 
 ```scala
 pairParser: [A, B](
@@ -377,7 +408,128 @@ res5: Seq[BigDecimal] = List(1.00002, 2.00010002, 3.00002, 4.0005)
 layout: false
 class: center, middle, inverse
 # Take 3
+## Еще немного лучше
+
+---
+layout: true
+# Typeclass encoding take 3
+
+---
+## Bolerplate 👇
+
+```scala
+  implicit object ByteParser extends Parser[Byte] {
+    def parse = { s => Try(s.toByte).toOption }
+  }
+  implicit object ShortParser extends Parser[Short] {
+    def parse = { s => Try(s.toShort).toOption }
+  }
+  implicit object IntParser extends Parser[Int] {
+    def parse = { s => Try(s.toInt).toOption }
+  }
+  implicit object LongParser extends Parser[Long] {
+    def parse = { s => Try(s.toLong).toOption }
+  }
+  implicit object FloatParser extends Parser[Float] {
+    def parse = { s => Try(s.toFloat).toOption }
+  }
+  implicit object DoubleParser extends Parser[Double] {
+    def parse = { s => Try(s.toDouble).toOption }
+  }
+  implicit object BoolParser extends Parser[Boolean] {
+    def parse = { s => Try(s.toBoolean).toOption }
+  }
+  ....
+```
+
+---
+## Helper function
+
+```scala
+object Parser {
+  final def instance[T](f: String => Option[T]): Parser[T] = new Parser[T] {
+    def parse = { from: String => f(from) }
+  }
+  ...
+}
+```
+
+--
+
+
+```scala
+implicit val ByteParser   = Parser.instance[Byte] { s => Try(s.toByte).toOption }
+implicit val ShortParser  = Parser.instance[Short] { s => Try(s.toShort).toOption }
+implicit val IntParser    = Parser.instance[Int] { s => Try(s.toInt).toOption }
+implicit val LongParser   = Parser.instance[Long] { s => Try(s.toLong).toOption }
+implicit val FloatParser  = Parser.instance[Float] { s => Try(s.toFloat).toOption }
+implicit val DoubleParser = Parser.instance[Double] { s => Try(s.toDouble).toOption }
+implicit val BoolParser   = Parser.instance[Boolean] { s => Try(s.toBoolean).toOption }
+implicit val CharParser   = Parser.instance[Char] {
+	case s if s.length == 1 => Some(s.charAt(0))
+	case _                  => None
+}
+implicit val StringParser = Parser.instance[String] { Some.apply }
+```
+
+---
+##  SAM (since 2.12.0)
+
+```scala
+trait Parser[T] {
+  def parse(from: String): Option[T]
+}
+```
+
+--
+
+```scala
+val myParser: Parser[BigDecimal] = { s: String  => Try(BigDecimal(s)).toOption }
+```
+
+--
+
+```scala
+  implicit val byteParser:    Parser[Byte] = { s => Try(s.toByte).toOption }
+  implicit val shortParser:   Parser[Short] = { s => Try(s.toShort).toOption }
+  implicit val intParser:     Parser[Int] = { s => Try(s.toInt).toOption }
+  implicit val longParser:    Parser[Long] = { s => Try(s.toLong).toOption }
+  implicit val floatParser:   Parser[Float] = { s => Try(s.toFloat).toOption }
+  implicit val doubleParser:  Parser[Double] = { s => Try(s.toDouble).toOption }
+  implicit val booleanParser: Parser[Boolean] = { s => Try(s.toBoolean).toOption }
+  implicit val stringParser:  Parser[String] = Some.apply[String]
+  implicit val charParser:    Parser[Char] = { s =>
+     if (s.length == 1) Some(s.charAt(0)) else None
+  }
+```
+
+---
+layout: false
+class: center, middle, inverse
+# Take 4
 ## Парсинг  структур данных
+---
+class: middle
+
+### Отчет:
+```scala
+Наименование | Цена   | Количество
+-------------|--------|-----------
+ручки        | 10.00  |    200     
+степлеры     | 100.50 |    34
+арбузы       | 300.00 |    50
+```
+
+--
+
+### Результат:
+```scala
+ручки: 2000.0
+степлеры: 3417.0
+арбузы: 1500.0
+Total is: 6917.0
+```
+
 
 ---
 layout: true
@@ -474,21 +626,15 @@ res1: shapeless.Generic[Item]{type Repr = String :: Double :: Int :: HNil}
 ---
 
 ```scala
-implicit object HNilParser extends Parser[HNil] {
-  def parse = { s => if (s.isEmpty) Some(HNil) else None }
-}
+implicit val hNilParser: Parser[HNil] = { s => if (s.isEmpty) Some(HNil) else None }
 ```
 
 --
 
 ```scala
-implicit object HNilParser extends Parser[HNil] {
-  def parse = { s => if (s.isEmpty) Some(HNil) else None }
-}
-
 implicit def hconsParser[H: Parser, T <: HList: Parser] = new Parser[H :: T] {
-  def parse: String => Option[H :: T] = { s =>
-    s.split(",").toList match {
+  def parse(from: String): Option[H :: T] = {
+    from.split(",").toList match {
       case head +: tail =>
         for {
           h <- Parser[H].parse(head)
@@ -502,12 +648,24 @@ implicit def hconsParser[H: Parser, T <: HList: Parser] = new Parser[H :: T] {
 ---
 
 ```scala
-implicit def caseClassParser[A, R <: HList](implicit
-                                            gen: Generic[A] { type Repr = R },
-                                            reprParser: Parser[R]): Parser[A] = 
-new Parser[A] {
-  def parse: String => Option[A] = { s => reprParser.parse(s) map gen.from }
-}
+implicit def caseClassParser[A, R <: HList](
+	implicit
+	gen: Generic[A] { type Repr = R },
+	reprParser: Parser[R]): Parser[A] = { s: String => 
+		reprParser.parse(s) map gen.from 
+	}
+```
+
+--
+
+
+```scala
+scala> case class Foo(a: Int, b: String)
+defined class Foo
+scala> val fooGen = Generic[Foo]
+fooGen: shapeless.Generic[Foo]{type Repr = Int :: String ::HNil} = anon$macro$9$1@288d618a
+scala> val foo = fooGen.from(1 :: "Hello" :: HNil)
+foo: Foo = Foo(1,Hello)
 ```
 
 ---
@@ -535,14 +693,43 @@ scala> println(buildReport(reportList))
 Total is: 6917.0
 ```
 
-
 ---
 layout: false
 class: center, middle, inverse
+# Take 5
+## Все сделано за нас. Почти
 
-#We are hiring!
-![actor](file:///Users/rockjam/Downloads/Actor_Logo_New.png)
-## Actor
+---
+## Shapeless тайп класс TypeClass
+
+```scala
+object Parser extends ProductTypeClassCompanion[Parser] {
+  ... // инстансы тайпклассов для примитивов и тд.
+  
+  object typeClass extends ProductTypeClass[Parser] {
+    override def product[H, T <: HList](
+		ch: Parser[H],
+		ct: Parser[T]): Parser[H :: T] = { from =>
+      from.split(",").toList match {
+        case h +: tail =>
+          for {
+            head <- ch.parse(h)
+            tail <- ct.parse(tail.mkString(","))
+          } yield head :: tail
+      }
+    }
+    override def emptyProduct: Parser[HNil] = 
+	  { s => if (s.isEmpty) Some(HNil) else None }
+    override def project[F, G](
+		instance: => Parser[G], 
+		to: F => G, 
+		from: G => F): Parser[F] = 
+	  { s => instance.parse(s).map(from) }
+  }
+}
+```
+---
+
     </textarea>
     <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js">
     </script>

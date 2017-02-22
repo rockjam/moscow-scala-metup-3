@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package com.github.rockjam.typeclasses.take7
+package com.github.rockjam.typeclasses.take8
 
-sealed trait Json // A value can be:
-final case class JsString(s: String) extends Json // * a string in double quotes,
-final case class JsNumber(d: Double) extends Json // * or a number
-final case class JsBoolean(b: Boolean) extends Json // * or true or false
-final case object JsNull extends Json // * or null
-case class JsObject(pairs: Map[String, Json]) // * or an object
-  extends Json
-final case class JsArray(values: List[Json]) // * or an array
-  extends Json
+sealed trait Json
+final case class JsString(s: String) extends Json
+final case class JsNumber(d: Double) extends Json
+final case class JsBoolean(b: Boolean) extends Json
+final case object JsNull extends Json
+case class JsObject(pairs: Map[String, Json]) extends Json
+final case class JsArray(values: List[Json]) extends Json
 
 object JsObject {
-  val empty = JsObject(Map.empty[String, Json])
+  final val empty = JsObject(Map.empty[String, Json])
   def apply(pairs: (String, Json)*): JsObject = JsObject(pairs.toMap)
 }
 
