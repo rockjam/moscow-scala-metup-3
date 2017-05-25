@@ -21,7 +21,7 @@ final case class JsString(s: String) extends Json
 final case class JsNumber(d: Double) extends Json
 final case class JsBoolean(b: Boolean) extends Json
 final case object JsNull extends Json
-case class JsObject(pairs: Map[String, Json]) extends Json
+final case class JsObject(pairs: Map[String, Json]) extends Json
 final case class JsArray(values: List[Json]) extends Json
 
 object JsObject {
